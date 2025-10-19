@@ -1,0 +1,538 @@
+----------------------------------------------------------------
+<!doctype html>
+<html lang="ru">
+<head>
+ <meta charset="utf-8" />
+ <meta name="viewport" content="width=device-width,initial-scale=1" />
+ <title>Spiral Fractal Studio — Mobile</title>
+ <style>
+   :root{
+     --bg:#050710; --panel:#0f1724; --accent:#6ee7b7; --muted:#9aa6b2; --glass: rgba(255,255,255,0.03);
+     --control-bg:rgba(255,255,255,0.04);
+   }
+   html,body{height:100%; margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:linear-gradient(180deg,#03040a 0%,#071025 100%); color:#e6eef6;}
+   .wrap{display:flex; flex-direction:column; gap:12px; padding:12px; box-sizing:border-box; max-width:1100px; margin:0 auto;}
+   .top{display:flex; gap:12px; align-items:center; justify-content:space-between;}
+   h1{font-size:16px; margin:0; color:#dff7ea}
+   .canvas-wrap{background:var(--panel); border-radius:12px; padding:8px; box-shadow: 0 6px 30px rgba(2,6,23,0.6);}
+   canvas{width:100%; height:60vh; display:block; background:transparent; border-radius:8px;}
+   .panel{background:linear-gradient(180deg,var(--glass), rgba(255,255,255,0.01)); padding:10px; border-radius:12px; box-shadow: 0 8px 30px rgba(2,6,23,0.6);}
+   label{display:block; font-size:12px; color:var(--muted); margin-top:8px;}
+   .row{display:flex; gap:8px; align-items:center;}
+   input[type="range"]{width:100%}
+   .control{background:var(--control-bg); padding:8px 10px; border-radius:8px; margin-top:6px;}
+   .small{font-size:12px; color:var(--muted)}
+   .btn{display:inline-block; background:var(--accent); color:#052018; padding:8px 10px; border-radius:8px; margin-top:8px; cursor:pointer; font-weight:600; border:none;}
+   select,input[type=number]{width:100%; padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.04); background:transparent; color:inherit}
+   .flex-row{display:flex; gap:8px}
+   .chip{background:rgba(255,255,255,0.03); padding:6px 8px; border-radius:999px; font-size:12px; color:var(--muted)}
+   .controls-grid{display:grid; grid-template-columns: 1fr 1fr; gap:8px;}
+   @media(max-width:720px){ .controls-grid{grid-template-columns:1fr} }
+   .footer{font-size:12px;color:var(--muted); margin-top:8px}
+ </style>
+</head>
+<body>
+ <div class="wrap">
+   <div class="top">
+     <h1>Spiral Fractal Studio</h1>
+     <div class="small">Мобильная версия — QuickEdit / Termux</div>
+   </div>
+
+   <div class="canvas-wrap">
+     <canvas id="c" width="2048" height="2048"></canvas>
+   </div>
+
+   <div class="panel">
+     <label>Разрешение (px) — квадрат, рекомендуется 1024–4096</label>
+     <div class="flex-row">
+       <select id="res">
+         <option value="1024">1024</option>
+         <option value="1536">1536</option>
+         <option value="2048" selected>2048</option>
+         <option value="3072">3072</option>
+         <option value="4096">4096</option>
+       </select>
+       <button class="btn" id="resizeBtn">Применить</button>
+     </div>
+
+     <div class="controls-grid">
+       <div>
+         <label>Витков спирали <span class="chip" id="turnsVal">12</span></label>
+         <div class="control"><input id="turns" type="range" min="1" max="40" value="12"></div>
+       </div>
+       <div>
+         <label>Точек на виток <span class="chip" id="ppv">120</span></label>
+         <div class="control"><input id="points" type="range" min="20" max="600" value="120"></div>
+       </div>
+
+       <div>
+         <label>Глубина рекурсии <span class="chip" id="layersVal">6</span></label>
+         <div class="control"><input id="layers" type="range" min="1" max="12" value="6"></div>
+       </div>
+       <div>
+       	         <label>Скорость уменьшения <span class="chip" id="decayVal">0.92</span></label>
+         <div class="control"><input id="decay" type="range" min="0.7" max="0.99" step="0.01" value="0.92"></div>
+       </div>
+
+       <div>
+         <label>Количество спиралей <span class="chip" id="spiralCount">3</span></label>
+         <div class="control"><input id="spiralCountRange" type="range" min="1" max="6" value="3"></div>
+       </div>
+       <div>
+         <label>Шум/живость <span class="chip" id="jitterVal">0.25</span></label>
+         <div class="control"><input id="jitter" type="range" min="0" max="1" step="0.01" value="0.25"></div>
+       </div>
+     </div>
+
+     <label>Фиксированный набор конечных элементов — 13 типов. Выберите стиль:</label>
+     <select id="terminalType">
+       <option value="flower" selected>1 • Flower</option>
+       <option value="miniSpiral">2 • Mini Spiral</option>
+       <option value="crystal">3 • Crystal</option>
+       <option value="snowflake">4 • Snowflake</option>
+       <option value="gem">5 • Gem</option>
+       <option value="eye">6 • Eye</option>
+       <option value="drop">7 • Drop</option>
+       <option value="starburst">8 • Starburst</option>
+       <option value="leaf">9 • Leaf</option>
+       <option value="petal">10 • Petal Cluster</option>
+       <option value="disc">11 • Disc</option>
+       <option value="cross">12 • Cross</option>
+       <option value="hex">13 • Hex</option>
+     </select>
+
+     <label>Seed (фиксирует картину)</label>
+     <div class="flex-row" style="margin-top:6px;">
+       <input id="seed" type="number" value="42" />
+       <button id="regen" class="btn" style="background:#9fd3ff;color:#022">Рендом</button>
+     </div>
+
+     <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+       <button id="renderBtn" class="btn">Генерировать</button>
+       <button id="saveBtn" class="btn" style="background:#9fd3ff;color:#022">Сохранить PNG</button>
+       <button id="saveSvgBtn" class="btn" style="background:#ffd08a;color:#222">Сохранить SVG</button>
+     </div>
+
+     <div class="footer">Подсказка: для мобильного рекомендуется резолюция 1024–2048. Для 4096/8K — используйте компьютер.</div>
+   </div>
+ </div>
+
+ <script>
+ (function(){
+   const c = document.getElementById('c');
+   let ctx = c.getContext('2d', {alpha:true});
+
+   // Controls
+   const RES_SELECT = document.getElementById('res');
+   const resizeBtn = document.getElementById('resizeBtn');
+   const renderBtn = document.getElementById('renderBtn');
+   const saveBtn = document.getElementById('saveBtn');
+   const saveSvgBtn = document.getElementById('saveSvgBtn');
+   const regenBtn = document.getElementById('regen');
+
+   const pointsCtrl = document.getElementById('points');
+   const turnsCtrl = document.getElementById('turns');
+   const layersCtrl = document.getElementById('layers');
+   const decayCtrl = document.getElementById('decay');
+   const spiralCountCtrl = document.getElementById('spiralCountRange');
+   const terminalType = document.getElementById('terminalType');
+   const jitterCtrl = document.getElementById('jitter');
+   const seedInput = document.getElementById('seed');
+
+   const turnsVal = document.getElementById('turnsVal');
+   const ppv = document.getElementById('ppv');
+   const layersVal = document.getElementById('layersVal');
+   const decayVal = document.getElementById('decayVal');
+   const spiralCountVal = document.getElementById('spiralCount');
+   const jitterVal = document.getElementById('jitterVal');
+
+   function setDisplayVals(){
+   	     turnsVal.textContent = turnsCtrl.value;
+     ppv.textContent = pointsCtrl.value;
+     layersVal.textContent = layersCtrl.value;
+     decayVal.textContent = parseFloat(decayCtrl.value).toFixed(2);
+     spiralCountVal.textContent = spiralCountCtrl.value;
+     jitterVal.textContent = parseFloat(jitterCtrl.value).toFixed(2);
+   }
+   [pointsCtrl, turnsCtrl, layersCtrl, decayCtrl, spiralCountCtrl, jitterCtrl].forEach(el=> el.addEventListener('input', setDisplayVals));
+   setDisplayVals();
+
+   regenBtn.addEventListener('click', ()=>{ seedInput.value = Math.floor(Math.random()*1000000); });
+
+   resizeBtn.addEventListener('click', ()=>{
+     const r = parseInt(RES_SELECT.value,10) || 2048;
+     c.width = r; c.height = r;
+     ctx = c.getContext('2d', {alpha:true});
+     render();
+   });
+
+   // PRNG
+   function makeRNG(seed){
+     let s = (seed>>>0) || 0xDEADBEEF;
+     return function(){
+       s = Math.imul(1664525, s) + 1013904223 | 0;
+       return ((s >>> 0) / 4294967296);
+     };
+   }
+
+   // HSV -> RGB [0..255]
+   function hsvToRgb(h,s,v){
+     let r,g,b;
+     let i = Math.floor(h*6);
+     let f = h*6 - i;
+     let p = v*(1-s);
+     let q = v*(1 - f*s);
+     let t = v*(1 - (1-f)*s);
+     switch(i%6){
+       case 0: r=v; g=t; b=p; break;
+       case 1: r=q; g=v; b=p; break;
+       case 2: r=p; g=v; b=t; break;
+       case 3: r=p; g=q; b=v; break;
+       case 4: r=t; g=p; b=v; break;
+       case 5: r=v; g=p; b=q; break;
+     }
+     return [Math.round(r*255), Math.round(g*255), Math.round(b*255)];
+   }
+
+   // Terminal elements (13 types)
+   function drawTerminal(ctx,x,y,radius,rotation, type, rng){
+     ctx.save();
+     ctx.translate(x,y);
+     ctx.rotate(rotation);
+     switch(type){
+       case 'flower':
+         let petals = 6 + Math.floor(rng()*3);
+         for(let i=0;i<petals;i++){
+           let ang = i*(2*Math.PI/petals);
+           let px = Math.cos(ang)*radius*1.6;
+           let py = Math.sin(ang)*radius*1.6;
+           let h = (0.55 + 0.15*Math.sin(rotation + i)) % 1.0;
+           let col = hsvToRgb(h, 0.7, 0.9);
+           ctx.fillStyle = \`rgba(${col[0]},${col[1]},${col[2]},0.96)\`;
+           ctx.beginPath();
+           ctx.ellipse(px,py,radius*0.9,radius*0.45,ang,0,Math.PI*2);
+           ctx.fill();
+         }
+         ctx.beginPath();
+         let cc = hsvToRgb((0.12 + 0.05*Math.sin(rotation))%1.0,0.7,0.98);
+         ctx.fillStyle = \`rgb(${cc[0]},${cc[1]},${cc[2]})\`;
+         ctx.arc(0,0, radius*0.6,0,Math.PI*2);
+         ctx.fill();
+         break;
+
+       case 'miniSpiral':
+         ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+         ctx.lineWidth = Math.max(1, radius*0.18);
+         ctx.beginPath();
+         for(let t=0;t<6;t+=0.2){
+           let rr = radius*(0.1 + 0.9*(t/6));
+           let xx = Math.cos(t*2)*rr;
+           let yy = Math.sin(t*2)*rr;
+           if(t===0) ctx.moveTo(xx,yy); else ctx.lineTo(xx,yy);
+         }
+         ctx.stroke();
+         break;
+
+       case 'crystal':
+         ctx.fillStyle = \`rgba(180,220,255,0.95)\`;
+         for(let i=0;i<4;i++){
+           ctx.rotate(Math.PI/2);
+           ctx.beginPath();
+           ctx.moveTo(0,0);
+           ctx.lineTo(radius*1.8,0);
+           ctx.lineTo(radius*0.2, radius*0.6);
+           ctx.closePath();
+           ctx.fill();
+         }
+         break;
+
+       case 'snowflake':
+         ctx.strokeStyle = \`rgba(200,230,255,0.98)\`;
+         ctx.lineWidth = Math.max(1, radius*0.12);
+         for(let i=0;i<6;i++){
+           ctx.beginPath();
+           ctx.moveTo(0,0);
+           ctx.lineTo(0, -radius*2);
+           ctx.stroke();
+           ctx.rotate(Math.PI/3);
+         }
+         break;
+
+       case 'gem':
+         ctx.fillStyle = \`rgba(255,230,200,0.95)\`;
+         ctx.beginPath();
+         ctx.moveTo(0,-radius*1.2);
+         ctx.lineTo(radius*1.1,0);
+         ctx.lineTo(0,radius*1.2);
+         ctx.lineTo(-radius*1.1,0);
+         ctx.closePath();
+         ctx.fill();
+         break;
+
+       case 'eye'
+                ctx.fillStyle = \`rgba(255,255,255,0.95)\`;
+         ctx.beginPath();
+         ctx.ellipse(0,0,radius*1.6,radius,0,0,Math.PI*2);
+         ctx.fill();
+         ctx.fillStyle = \`rgba(20,20,30,0.95)\`;
+         ctx.beginPath();
+         ctx.arc(0,0,radius*0.6,0,Math.PI*2);
+         ctx.fill();
+         break;
+
+       case 'drop':
+         ctx.fillStyle = \`rgba(140,200,255,0.95)\`;
+         ctx.beginPath();
+         ctx.moveTo(0,-radius*1.5);
+         ctx.quadraticCurveTo(radius*1.0,0,0,radius*1.5);
+         ctx.quadraticCurveTo(-radius*1.0,0,0,-radius*1.5);
+         ctx.fill();
+         break;
+
+       case 'starburst':
+         ctx.fillStyle = \`rgba(255,250,200,0.95)\`;
+         for(let i=0;i<10;i++){
+           ctx.rotate(Math.PI*2/10);
+           ctx.beginPath();
+           ctx.moveTo(0,0);
+           ctx.lineTo(radius*1.8,0);
+           ctx.lineTo(radius*0.6,0.2);
+           ctx.closePath();
+           ctx.fill();
+         }
+         break;
+
+       case 'leaf':
+         ctx.fillStyle = \`rgba(120,200,150,0.95)\`;
+         ctx.beginPath();
+         ctx.ellipse(0,0,radius*1.4,radius*0.6,Math.PI/6,0,Math.PI*2);
+         ctx.fill();
+         break;
+
+       case 'petal':
+         ctx.fillStyle = \`rgba(240,160,200,0.95)\`;
+         for(let i=0;i<5;i++){
+           ctx.rotate(2*Math.PI/5);
+           ctx.beginPath();
+           ctx.ellipse(radius*0.9,0,radius*0.9,radius*0.6,0,0,Math.PI*2);
+           ctx.fill();
+         }
+         break;
+
+       case 'disc':
+         ctx.fillStyle = \`rgba(220,220,255,0.95)\`;
+         ctx.beginPath();
+         ctx.arc(0,0,radius*1.1,0,Math.PI*2);
+         ctx.fill();
+         break;
+
+       case 'cross':
+         ctx.fillStyle = \`rgba(255,210,220,0.95)\`;
+         ctx.fillRect(-radius*0.2,-radius*1.6,radius*0.4,radius*3.2);
+         ctx.fillRect(-radius*1.6,-radius*0.2,radius*3.2,radius*0.4);
+         break;
+
+       case 'hex':
+         ctx.fillStyle = \`rgba(200,230,240,0.95)\`;
+         ctx.beginPath();
+         for(let i=0;i<6;i++){
+           let ang = i*(Math.PI*2/6);
+           let xx = Math.cos(ang)*radius*1.3;
+           let yy = Math.sin(ang)*radius*1.3;
+           if(i===0) ctx.moveTo(xx,yy); else ctx.lineTo(xx,yy);
+         }
+         ctx.closePath();
+         ctx.fill();
+         break;
+
+       default:
+         ctx.fillStyle = \`rgba(255,240,220,0.95)\`;
+         ctx.beginPath();
+         ctx.arc(0,0,radius,0,Math.PI*2);
+         ctx.fill();
+     }
+     ctx.restore();
+   }
+
+   // Main render (iterative stack-based)
+   function render(){
+     const W = c.width, H = c.height;
+     ctx.clearRect(0,0,W,H);
+
+     // background
+     const bgGrad = ctx.createLinearGradient(0,0,0,H);
+     bgGrad.addColorStop(0,'#060819');
+     bgGrad.addColorStop(1,'#071026');
+     ctx.fillStyle = bgGrad;
+     ctx.fillRect(0,0,W,H);
+
+     const params = {
+       SPIRAL_TURNS: Number(turnsCtrl.value),
+       POINTS_PER_TURN: Number(pointsCtrl.value),
+       MAX_LAYERS: Number(layersCtrl.value),
+       SCALE_DECAY: Number(decayCtrl.value),
+       BRANCH_ANGLE_JITTER: Number(jitterCtrl.value),
+       SPIRAL_COUNT: Number(spiralCountCtrl.value),
+       TERMINAL: terminalType.value,
+       SEED: Number(seedInput.value) | 0
+     };
+
+     const rng = makeRNG(params.SEED);
+     const CENTER = {x: W/2, y: H/2};
+
+     for(let s=0;s<params.SPIRAL_COUNT;s++){
+       const offx = CENTER.x + (rng()-0.5) * W * 0.04;
+       const offy = CENTER.y + (rng()-0.5) * H * 0.04;
+       const r0 = Math.min(W,H) * (0.14 + 0.05 * s);
+       const rot = rng()*Math.PI*2;
+       recursive_spiral_iter(offx, offy, r0, params, rot, rng);
+     }
+
+     // soft glows
+     for(let i=0;i<12;i++){
+       let rr = Math.min(W,H)*(0.015 + 0.05*rng());
+       let x = CENTER.x + (rng()-0.5)*W*0.7;
+       let y = CENTER.y + (rng()-0.5)*H*0.7;
+       let h = (0.55 + 0.35*rng())%1;
+       let col = hsvToRgb(h, 0.4+0.4*rng(), 0.6+0.4*rng());
+       ctx.beginPath();
+       ctx.fillStyle = \`rgba(${col[0]},${col[1]},${col[2]},${0.07 + 0.28*rng()})\`;
+              ctx.arc(x,y,rr,0,Math.PI*2);
+       ctx.fill();
+     }
+   }
+
+   function recursive_spiral_iter(cx, cy, radius, params, base_rotation, rng){
+     const stack = [];
+     stack.push({cx,cy,radius,turns:params.SPIRAL_TURNS,depth:params.MAX_LAYERS,rotation:base_rotation, paletteIndex:0});
+     while(stack.length){
+       const node = stack.pop();
+       const {cx,cy,radius,turns,depth,rotation,paletteIndex} = node;
+       if(depth<=0 || radius < 0.5) continue;
+
+       const points = Math.max(8, Math.floor(params.POINTS_PER_TURN*turns));
+       const a = 0;
+       const b = radius / (2*Math.PI*turns) * 1.8;
+
+       for(let i=0;i<points;i++){
+         const t = i/points * (2*Math.PI*turns);
+         let r = a + b * t;
+         const jitter = (Math.sin(3.1*t + depth) + Math.cos(1.7*t*0.7)) * 0.8;
+         r += jitter * (radius * 0.0025);
+         const ang = t + rotation;
+         const x = cx + Math.cos(ang)*r;
+         const y = cy + Math.sin(ang)*r;
+
+         const local_scale = radius * Math.pow(params.SCALE_DECAY, (r/(b*2*Math.PI))) * Math.pow(0.6, (params.MAX_LAYERS - depth));
+         let element_radius = Math.max(0.6, local_scale*0.9);
+
+         const hue = (0.6 + 0.4*Math.sin(0.12*t + depth*0.7 + paletteIndex*0.4)) % 1.0;
+         const sat = 0.5 + 0.4*Math.cos(t*0.07 + depth);
+         const val = 0.6 + 0.4*Math.exp(-depth*0.6);
+         const col = hsvToRgb((hue+1)%1, Math.min(1,Math.max(0.2,sat)), Math.min(1,Math.max(0.15,val)));
+
+         ctx.beginPath();
+         ctx.fillStyle = \`rgba(${col[0]},${col[1]},${col[2]},0.95)\`;
+         ctx.arc(x,y,element_radius,0,Math.PI*2);
+         ctx.fill();
+
+         if(rng() < 0.06 + 0.01*depth){
+           drawTerminal(ctx, x, y, Math.max(1, element_radius*1.0), ang, params.TERMINAL, rng);
+         }
+
+         if(rng() < 0.02 * (depth)){
+           const ang2 = ang + (rng()-0.5) * params.BRANCH_ANGLE_JITTER;
+           const nx = x + Math.cos(ang2) * element_radius * (1.8 + rng());
+           const ny = y + Math.sin(ang2) * element_radius * (1.8 + rng());
+           const newRadius = element_radius*1.6;
+           stack.push({cx:nx,cy:ny,radius:newRadius,turns:2.4,depth:depth-1, rotation: ang2*0.9, paletteIndex: paletteIndex+1});
+         }
+       }
+
+       for(let k=0;k<10;k++){
+         const ang = rotation + rng()*2*Math.PI;
+         const rr = radius*(0.02 + 0.02*rng());
+         const x = cx + Math.cos(ang)*rr;
+         const y = cy + Math.sin(ang)*rr;
+         ctx.beginPath();
+         const col = hsvToRgb((0.6+rng()*0.2)%1.0,0.6,0.9);
+         ctx.fillStyle = \`rgba(${col[0]},${col[1]},${col[2]},0.98)\`;
+         ctx.arc(x,y, rr*0.5,0,Math.PI*2);
+         ctx.fill();
+       }
+
+     }
+   }
+
+   // Save PNG
+   saveBtn.addEventListener('click', ()=>{
+     const link = document.createElement('a');
+     link.download = 'spiral_fractal.png';
+     link.href = c.toDataURL('image/png');
+     link.click();
+   });
+
+   // Export simplified SVG (vector approximation)
+   function exportSVG(){
+     const W = c.width, H = c.height;
+     const xmlns = 'http://www.w3.org/2000/svg';
+     let svg = [];
+     svg.push(\`<svg xmlns="${xmlns}" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">\`);
+     svg.push(\`<rect width="100%" height="100%" fill="#060819"/>\`);
+
+     const SPIRAL_TURNS = Number(turnsCtrl.value);
+     const POINTS_PER_TURN = Math.min(800, Number(pointsCtrl.value));
+     const SPIRAL_COUNT = Number(spiralCountCtrl.value);
+     const rng = makeRNG(Number(seedInput.value));
+
+     for(let s=0;s<SPIRAL_COUNT;s++){
+       const cx = W/2 + (rng()-0.5)*W*0.04;
+       const cy = H/2 + (rng()-0.5)*H*0.04;
+       const radius = Math.min(W,H)*(0.14 + 0.05*s);
+       const rot = rng()*Math.PI*2;
+       const a = 0;
+       const b = radius / (2*Math.PI*SPIRAL_TURNS) * 1.8;
+       const points = Math.max(8, Math.floor(POINTS_PER_TURN * SPIRAL_TURNS));
+       for(let i=0;i<points;i++){
+         const t = i/points * (2*Math.PI*SPIRAL_TURNS);
+         const r = a + b * t;
+         const ang = t + rot;
+         const x = cx + Math.cos(ang)*r;
+         const y = cy + Math.sin(ang)*r;
+         const hue = (0.6 + 0.4*Math.sin(0.12*t)) % 1.0;
+         const col = hsvToRgb(hue, 0.6, 0.85);
+         const rad = Math.max(1, radius * 0.008);
+         svg.push(\`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${rad.toFixed(2)}" fill="rgb(${col[0]},${col[1]},${col[2]})" />\`);
+       }
+     }
+
+     svg.push('</svg>');
+     const svgStr = svg.join('\\n');
+     const blob = new Blob([svgStr], {type:'image/svg+xml;charset=utf-8'});
+     const url = URL.createObjectURL(blob);
+     const a = document.createElement('a');
+     a.href = url;
+     a.download = 'spiral_fractal.svg';
+     a.click();
+     URL.revokeObjectURL(url);
+   }
+
+   saveSvgBtn.addEventListener('click', exportSVG);
+   renderBtn.addEventListener('click', render);
+
+   // init
+   (function init(){
+     c.width = Number(RES_SELECT.value);
+     c.height = Number(RES_SELECT.value);
+     render();
+   })();
+
+ })();
+ </script>
+</body>
+</html>
+----------------------------------------------------------------
+
+Инструкции для QuickEdit + Termux — кратко
+1) В Termux:
+  - mkdir -p ~/SpiralFractal && cd ~/SpiralFractal
